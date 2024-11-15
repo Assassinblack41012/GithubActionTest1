@@ -1,0 +1,47 @@
+name: CI
+on: [push]
+
+jobs:
+  setup-ngrok:
+    runs-on: windows-latest
+    steps:
+      - name: Create New User and Enable RDP
+        shell: pwsh
+        run: |
+          $Password = ConvertTo-SecureString "Password123" -AsPlainText -Force
+          New-LocalUser -Name "Username" -Password $Password -FullName "Full Name" -Description "Description"
+          
+          Add-LocalGroupMember -Group "Administrators" -Member "Username"
+          
+          Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
+          
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+          
+          Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -Name "UserAuthentication" -Value 1
+
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install Chocolatey
+        shell: pwsh
+        run: |
+          Set-ExecutionPolicy Bypass -Scope Process -Force
+          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
+          iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+
+      - name: Install Ngrok
+        shell: cmd
+        run: choco install ngrok -y
+
+      - name: Wait for 5 seconds
+        shell: pwsh
+        run: Start-Sleep -Seconds 5
+
+      - name: Authenticate Ngrok
+        env:
+          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
+        run: ngrok config add-authtoken 2NSZKcCIGFtFW3yjusLoKZCNF9r_6mQ6wS8TZwy5VYerBRYhu
+
+      - name: Run Ngrok with Debugging
+        shell: cmd
+        run: ngrok tcp 3389 --log=stdout --log-level=debug
