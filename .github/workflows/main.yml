@@ -1,47 +1,25 @@
-name: CI
-on: [push]
+name: Window 10
+
+on: [push, workflow_dispatch]
 
 jobs:
-  setup-ngrok:
+  build:
     runs-on: windows-latest
+    timeout-minutes: 9999
+
     steps:
-      - name: Create New User and Enable RDP
-        shell: pwsh
-        run: |
-          $Password = ConvertTo-SecureString "Password123" -AsPlainText -Force
-          New-LocalUser -Name "Username" -Password $Password -FullName "Full Name" -Description "Description"
-          
-          Add-LocalGroupMember -Group "Administrators" -Member "Username"
-          
-          Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
-          
-          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
-          
-          Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" -Name "UserAuthentication" -Value 1
-
-      - name: Checkout Code
-        uses: actions/checkout@v3
-
-      - name: Install Chocolatey
-        shell: pwsh
-        run: |
-          Set-ExecutionPolicy Bypass -Scope Process -Force
-          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072
-          iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
-
-      - name: Install Ngrok
-        shell: cmd
-        run: choco install ngrok -y
-
-      - name: Wait for 5 seconds
-        shell: pwsh
-        run: Start-Sleep -Seconds 5
-
-      - name: Authenticate Ngrok
+      - name: Download
+        run: Invoke-WebRequest https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip -OutFile ngrok.zip
+      - name: Extract
+        run: Expand-Archive ngrok.zip
+      - name: Auth
+        run: .\ngrok\ngrok.exe authtoken $Env:NGROK_AUTH_TOKEN
         env:
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
-        run: ngrok config add-authtoken 2NSZKcCIGFtFW3yjusLoKZCNF9r_6mQ6wS8TZwy5VYerBRYhu
-
-      - name: Run Ngrok with Debugging
-        shell: cmd
-        run: ngrok tcp 3389 --log=stdout --log-level=debug
+          NGROK_AUTH_TOKEN: ${{ secrets.NGROK_AUTH_TOKEN }}
+      - name: Enable TS
+        run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server'-name "fDenyTSConnections" -Value 0
+      - run: Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+      - run: Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -name "UserAuthentication" -Value 1
+      - run: Set-LocalUser -Name "Administrator" -Password (ConvertTo-SecureString -AsPlainText "PICpic123!@#" -Force)
+      - name: Create Tunnel
+        run: .\ngrok\ngrok.exe tcp 3389
