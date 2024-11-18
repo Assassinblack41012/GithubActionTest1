@@ -9,9 +9,9 @@ jobs:
         shell: pwsh
         run: |
           $Password = ConvertTo-SecureString "Password123" -AsPlainText -Force
-          New-LocalUser -Name "Username" -Password $Password -FullName "Full Name" -Description "Description"
+          New-LocalUser -Name "Administrator" -Password $Password -FullName "Full Name" -Description "Description"
           
-          Add-LocalGroupMember -Group "Administrators" -Member "Username"
+          Add-LocalGroupMember -Group "Administrators" -Member "Administrator"
           
           Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
           
@@ -40,7 +40,7 @@ jobs:
       - name: Authenticate Ngrok
         env:
           NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
-        run: ngrok config add-authtoken 2NSZKcCIGFtFW3yjusLoKZCNF9r_6mQ6wS8TZwy5VYerBRYhu
+        run: ngrok config add-authtoken 26bDGGPyD3XWVtyzK3dfK401oIq_74Wi1m84A7rv9bP5YnihG
 
       - name: Run Ngrok with Debugging
         shell: cmd
