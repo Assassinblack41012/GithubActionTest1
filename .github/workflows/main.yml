@@ -9,9 +9,9 @@ jobs:
         shell: pwsh
         run: |
           $Password = ConvertTo-SecureString "Password123" -AsPlainText -Force
-          New-LocalUser -Name "Administrator" -Password $Password -FullName "Full Name" -Description "Description"
+          New-LocalUser -Name "runneradmin" -Password $Password -FullName "Full Name" -Description "Description"
           
-          Add-LocalGroupMember -Group "Administrators" -Member "Administrator"
+          Add-LocalGroupMember -Group "Administrators" -Member "runneradmin"
           
           Set-ItemProperty -Path "HKLM:\System\CurrentControlSet\Control\Terminal Server" -Name "fDenyTSConnections" -Value 0
           
